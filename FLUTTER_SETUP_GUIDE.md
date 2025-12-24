@@ -212,7 +212,12 @@ flutter doctor
 **常见输出说明：**
 
 * ✅ **Flutter:** 核心 SDK 已就位。
-* ✅ **Chrome - develop for the web:** Web 开发就绪。
-* ✅ **Xcode - develop for iOS and macOS:** macOS/iOS 开发就绪。
-* ✅ **VS Code:** IDE 插件已就绪。
-* ⚠️ **Android toolchain:** 如果你不开发 Android App，可以忽略此项警告。
+* ✅ **Android toolchain:** Android 开发环境已就绪（如果此处有 ⚠️ 警告且你不开发 Android App，可忽略）。
+* ✅ **Xcode:** iOS/macOS 开发环境已就绪。
+* ✅ **Chrome:** Web 开发环境已就绪。
+* ✅ **Network resources:** 网络连接正常。
+
+**理想状态:**
+如果所有项都是绿色 ✅，并显示 `No issues found!`，说明你的环境完美无缺。
+
+![环境自检成功示例](./md-images/环境自检.png)
