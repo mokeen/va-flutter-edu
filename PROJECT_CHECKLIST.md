@@ -6,6 +6,7 @@
 
 * **架构模式:** **Riverpod Architecture (Feature-First)**
   * *为什么:* 相比 BLoC 更轻量，相比 Provider 更安全（编译时检查），完美支持依赖注入。
+  [codewithandrea](https://codewithandrea.com/articles/flutter-app-architecture-riverpod-introduction/)
 * **路由管理:** **GoRouter**
   * *为什么:* 官方推荐，支持深层链接 (Deep Linking)，API 设计符合直觉。
 * **不可变数据:** **Freezed + JsonSerializable**
