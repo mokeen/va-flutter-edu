@@ -1,0 +1,6 @@
+{
+  "chatgpt.openOnStartup": false,
+  "dart.flutterSdkPath": "${env:HOME}/fvm/default",
+  "dart.openDevTools": "flutter",
+  "dart.previewFlutterUiGuides": true
+}
