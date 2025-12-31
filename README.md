@@ -47,12 +47,13 @@ fvm flutter build macos --debug
 
 - 应用入口：`lib/main.dart`
 - 应用壳与路由：`lib/src/app.dart`、`lib/src/routing/app_router.dart`
-- 黑板页面：`lib/src/features/blackboard/presentation/blackboard.dart`
+- 黑板页面：`lib/src/features/blackboard/presentation/blackboard_screen.dart`
 
 ## 已实现（当前）
 
-- 无限画布（世界坐标）+ 缩放/平移（`InteractiveViewer`）
-- 工具：画笔 / 平移缩放 / 橡皮擦
+- 黑板画布：宽度随视口变化，按页垂直延伸
+- 交互：鼠标滚轮翻页（不支持拖拽/缩放）
+- 工具：画笔 / 浏览 / 橡皮擦
 - 撤销 / 重做 / 清空
 - 页数提示（虚拟分页显示）
 - Hooks：黑板页面使用 `HookConsumerWidget` 管理控制器生命周期

@@ -65,7 +65,7 @@ class HomeScreen extends StatelessWidget {
                     '学习工具探索（Web + macOS）',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                  const Text('当前阶段：单人黑板 MVP（画/擦/撤销重做/缩放平移）。'),
+                  const Text('当前阶段：单人黑板 MVP（画/擦/撤销重做/滚轮翻页）。'),
                 ],
               ),
               FilledButton.icon(

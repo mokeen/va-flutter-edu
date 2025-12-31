@@ -52,7 +52,7 @@ lib/
   - 声明位置：`lib/src/routing/app_router.dart`
   - 生成文件：`lib/src/routing/app_router.g.dart`（由 build_runner 生成）
   - 使用位置：`lib/src/app.dart` 里 `ref.watch(appRouterProvider)`，注入 `MaterialApp.router`
-- `BlackboardControllerProvider`：黑板状态与命令（类型 `BlackboardState`，notifier 为 `BlackboardController`）
+- `blackboardControllerProvider`：黑板状态与命令（类型 `BlackboardState`，notifier 为 `BlackboardController`）
   - 声明位置：`lib/src/features/blackboard/application/blackboard_controller.dart`
   - 状态模型：`lib/src/features/blackboard/application/blackboard_state.dart`（Freezed）
   - 使用位置：`lib/src/features/blackboard/presentation/blackboard_screen.dart`
@@ -78,7 +78,7 @@ lib/
   - 黑板：`/blackboard`
   - 设置：`/settings`
 - 兼容重定向：
-  - `/blackboard` → `/blackboard`
+  - `/whiteboard` → `/blackboard`
 
 #### 2.2.2 路由文件之间的关系
 
