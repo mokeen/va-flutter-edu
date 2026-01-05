@@ -2,5 +2,13 @@
   "chatgpt.openOnStartup": false,
   "dart.flutterSdkPath": "/Users/xueyong/fvm/default",
   "dart.openDevTools": "flutter",
-  "dart.previewFlutterUiGuides": true
+  "dart.previewFlutterUiGuides": true,
+  "files.exclude": {
+    "**/*.freezed.dart": true,
+    "**/*.g.dart": true
+  },
+  "search.exclude": {
+    "**/*.freezed.dart": true,
+    "**/*.g.dart": true
+  }
 }

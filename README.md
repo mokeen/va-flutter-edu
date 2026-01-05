@@ -7,6 +7,7 @@
 - 环境配置：`docs/FLUTTER_ENV_SETUP.md`
 - Flutter 项目开发说明书：`docs/FLUTTER_DEV_HANDBOOK.md`
 - 项目开发记录：`docs/VA_EDU_DEV_LOG.md`
+- 画板从 0→1（总纲 TODO #1 细拆）：`docs/BLACKBOARD_0_TO_1.md`
 
 ## 平台目录速查
 
@@ -49,17 +50,11 @@ fvm flutter build macos --debug
 - 应用壳与路由：`lib/src/app.dart`、`lib/src/routing/app_router.dart`
 - 黑板页面：`lib/src/features/blackboard/presentation/blackboard_screen.dart`
 
-## 已实现（当前）
+## 当前状态
 
-- 黑板画布：宽度随视口变化，按页垂直延伸
-- 交互：鼠标滚轮翻页（不支持拖拽/缩放）
-- 工具：画笔 / 浏览 / 橡皮擦
-- 撤销 / 重做 / 清空
-- 页数提示（虚拟分页显示）
-- Hooks：黑板页面使用 `HookConsumerWidget` 管理控制器生命周期
+- 黑板页面当前为画板占位页，后续将逐步实现画板能力。
+- 按 `docs/BLACKBOARD_0_TO_1.md` 从 0→1 实现“画板 MVP”（对应总纲 TODO #1）。
 
 ## 已知缺口（下一步）
 
-- 导出 PNG：目前只做了导出链路占位（SnackBar 显示字节数），未落盘/下载
-- 选择/移动/删除：未实现
-- 本地保存/加载：未实现（JSON 持久化待做）
+- 其余能力按总纲 TODO 逐步补齐：`docs/VA_EDU_DEV_LOG.md`
