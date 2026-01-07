@@ -1,12 +1,14 @@
-# Flutter 项目开发说明书（va-edu）
+# Flutter 开发常识手册
 
-这份文档是“说明书/手册”性质：介绍项目结构、Flutter 开发常识、常用工具与约定，尽量保持长期稳定；项目进度与变更记录请写到 `docs/VA_EDU_DEV_LOG.md`。
+这份文档只讲 Flutter/Dart 的通用开发常识与常见选择题，尽量保持长期稳定；项目相关的入口、路由、主题、资源、里程碑等信息，请写到 `docs/VA_EDU_DEV_LOG.md`。
 
 ## 文档导航
 
 - 环境配置：`docs/FLUTTER_ENV_SETUP.md`
 - 项目开发记录：`docs/VA_EDU_DEV_LOG.md`
 - 项目入口与运行：`README.md`
+
+---
 
 ## 1. 项目结构（Feature-First）
 
@@ -20,10 +22,10 @@ lib/
 │   ├── constants/            # 全局常量 (Colors, Styles)
 │   ├── utils/                # 通用工具 (Logger, Extensions)
 │   └── features/             # 业务模块
-│       └── blackboard/       # 黑板模块
-│           ├── domain/       # 实体与纯模型 (Freezed/Json)
-│           ├── data/         # 仓库/数据源（后续接入持久化/网络）
-│           ├── application/  # 业务逻辑与状态（Riverpod）
+│       └── <feature>/        # 任意业务模块
+│           ├── domain/       # 实体与纯模型（可序列化、可测试）
+│           ├── data/         # 仓库/数据源（本地存储/网络等）
+│           ├── application/  # 业务逻辑与状态（用例/命令/状态机）
 │           └── presentation/ # UI（Widget/Screen）
 └── main.dart                 # 程序入口
 ```
@@ -44,19 +46,6 @@ lib/
   - `ConsumerWidget`/`ConsumerStatefulWidget`：标准 Riverpod 写法
   - `HookConsumerWidget`：当页面需要管理 controller 生命周期时（例如 `TransformationController`、`AnimationController`、订阅/监听）
 
-#### 2.1.1 本项目的状态声明（Provider 清单）
-
-路由与业务状态都通过 Provider 暴露（“声明 + 引用”分离，便于测试与复用）：
-
-- `appRouterProvider`：路由 Provider（类型 `GoRouter`）
-  - 声明位置：`lib/src/routing/app_router.dart`
-  - 生成文件：`lib/src/routing/app_router.g.dart`（由 build_runner 生成）
-  - 使用位置：`lib/src/app.dart` 里 `ref.watch(appRouterProvider)`，注入 `MaterialApp.router`
-- `blackboardControllerProvider`：黑板状态与命令（类型 `BlackboardState`，notifier 为 `BlackboardController`）
-  - 声明位置：`lib/src/features/blackboard/application/blackboard_controller.dart`
-  - 状态模型：`lib/src/features/blackboard/application/blackboard_state.dart`（Freezed）
-  - 使用位置：`lib/src/features/blackboard/presentation/blackboard_screen.dart`
-
 常用用法约定：
 
 - 读状态：`ref.watch(xxxProvider)`
@@ -64,30 +53,9 @@ lib/
 
 ### 2.2 路由
 
-- 使用 `go_router`，集中在 `lib/src/routing/` 管理路由表
+- 使用 `go_router` 集中管理路由表（路径、参数、重定向等）
 - 约定：尽量使用声明式路由（路径、参数、重定向逻辑集中管理）
-- 本项目采用 Tab 导航：`StatefulShellRoute.indexedStack`（每个 Tab 独立导航栈），外壳在 `lib/src/shell/app_shell.dart`
-
-#### 2.2.1 本项目路由声明（Route Map）
-
-路由表在 `lib/src/routing/app_router.dart` 里集中声明：
-
-- 初始路由：`/blackboard`
-- Tab（IndexedStack）三段：
-  - 首页：`/`
-  - 黑板：`/blackboard`
-  - 设置：`/settings`
-- 兼容重定向：
-  - `/whiteboard` → `/blackboard`
-
-#### 2.2.2 路由文件之间的关系
-
-- `lib/src/routing/app_router.dart`：路由“数据声明”（路径、Tab 结构、重定向）
-- `lib/src/routing/app_router.g.dart`：Riverpod 生成的 Provider 封装（无需手改）
-- `lib/src/shell/app_shell.dart`：路由“呈现层”（Tab UI）
-  - 宽屏使用 `NavigationRail`
-  - 窄屏使用 `NavigationBar`
-  - 使用 `StatefulNavigationShell` 的 `goBranch` 切换 Tab
+- 多 Tab 场景常用：`StatefulShellRoute.indexedStack`（每个 Tab 独立导航栈）
 
 ### 2.3 不可变数据与序列化
 
@@ -100,7 +68,7 @@ lib/
 
 ## 3. 依赖与代码生成
 
-### 3.1 常用依赖（本项目）
+### 3.1 常用依赖（通用示例）
 
 `dependencies`：
 
@@ -117,70 +85,184 @@ lib/
 
 ### 3.2 代码生成命令
 
-建议统一用下面两条（项目里推荐 `fvm flutter`）：
+常见用法：
 
 ```bash
-fvm flutter pub run build_runner build --delete-conflicting-outputs
-fvm flutter pub run build_runner watch --delete-conflicting-outputs
+dart run build_runner build --delete-conflicting-outputs
+dart run build_runner watch --delete-conflicting-outputs
 ```
 
 ## 4. Flutter 开发常识（精简版）
 
-### 4.1 Widget、Element、RenderObject
+这一章面向“初学者 / Web 开发者”：不假设你会 Flutter 或 Dart，只讲到“能看懂项目、能自己写出第一版页面/交互”为止。
+
+建议阅读顺序：按 4.0 → 4.1 → 4.2 … 递进；遇到报错就回到对应小节查关键字。
+
+### 4.0 你需要先建立的 3 个心智模型
+
+#### 模型 A：声明式 UI（像 React）
+
+- 你写的不是“命令式地去摆控件”，而是“描述当前状态下 UI 应该长什么样”。
+- 当状态变化时，Flutter 会重新执行 `build()`，生成新的 Widget 树，再高效地更新界面。
+
+#### 模型 B：布局是“约束传递”（像 CSS 但规则更严格）
+
+- 父组件给子组件约束（最小/最大宽高），子组件在约束内决定自己的尺寸。
+- 绝大多数布局问题（溢出/不占满）都能用“约束是否合理”解释清楚。
+
+#### 模型 C：一切都是 Widget（像 DOM 节点）
+
+- `Text`/`Padding`/`Row`/`Column`/`Container` 都是 Widget。
+- 页面就是一个 Widget 树：从 `MaterialApp` → `Scaffold` → `body` → ……
+
+### 4.1 Dart（只学够写 UI 的那部分）
+
+#### 变量与常量（高频）
+
+- `var`：自动推断类型（新手可用，但别滥用）
+- `final`：运行时常量（值只赋一次）
+- `const`：编译期常量（更严格，常见报错是 “isn't a const constructor”）
+
+#### 空安全（高频）
+
+- `T?`：可能为空
+- `!`：我确定它不为空（用错会崩）
+- `??`：为空就用默认值
+
+#### 函数/回调（高频）
+
+- `() {}`：函数体
+- `() => expr`：单表达式写法（语法糖）
+- `VoidCallback`：无参无返回的回调类型（常见于按钮点击）
+
+### 4.2 Flutter 应用从哪启动（你在项目里能对应上）
+
+- `lib/main.dart`：入口，通常会 `runApp(...)`
+- `MaterialApp` / `MaterialApp.router`：整个 App 的根（主题、路由都在这里接入）
+- `build(BuildContext context)`：每个 Widget 输出 UI 的地方（类似 React 的 render）
+
+### 4.3 布局入门（先掌握 10 个 Widget 就能做 80% 页面）
+
+对照 Web：
+
+- `Padding` ≈ CSS padding
+- `SizedBox` ≈ 固定宽高/占位
+- `Container/DecoratedBox` ≈ 一个可设置背景/边框的 div
+- `Row/Column` ≈ flex row/column
+- `Expanded` ≈ flex: 1（吃掉剩余空间）
+- `Stack/Positioned` ≈ position: relative/absolute
+
+**新手最常踩坑：Row/Column 不会自动“撑满剩余空间”**：
+
+- 想让子组件占满剩余空间：用 `Expanded(child: ...)`
+- 想让页面能滚动：用 `SingleChildScrollView` 或 `ListView`
+- 遇到 overflow：先检查有没有该加 `Expanded` 或滚动容器
+
+### 4.4 Scaffold 是什么（为什么很多页面都用它）
+
+你可以把 `Scaffold` 理解为“Material 风格页面的标准骨架”，它提供了常用槽位与能力：
+
+- `body`：页面主体（你的画布一般在这里）
+- `appBar`/`bottomNavigationBar`/`drawer`：常见页面结构
+- `SnackBar`（通过 `ScaffoldMessenger`）：提示信息的宿主
+- 更易和 SafeArea、主题等配合
+
+### 4.5 Widget、Element、RenderObject（了解即可，不用死记）
 
 - `Widget`：配置（不可变）
 - `Element`：运行时实例（把 Widget 挂到树上）
-- `RenderObject`：真正负责布局与绘制
+- `RenderObject`：真正负责布局与绘制（渲染层）
 
 理解这三个层次，有助于你在做黑板这种高频绘制场景时选择正确的组件（例如 `CustomPaint`）。
 
-### 4.2 Stateless / Stateful / Hooks
+### 4.6 Stateless / Stateful / Hooks（什么时候用哪个）
 
 - `StatelessWidget`：纯展示，数据由外部驱动
 - `StatefulWidget`：需要生命周期管理（init/dispose）时使用
 - Hooks：用函数式方式管理资源与副作用，减少样板代码（例如 `useEffect`/`useMemoized`/`useListenable`）
 
-### 4.3 BuildContext 注意事项
+### 4.7 BuildContext 注意事项（新手必看）
 
-- 避免“跨 async gap”使用 `context`（需要时用 `if (!context.mounted) return;`）
-- 尽量在同一 build 同步阶段读取 `MediaQuery`、主题等信息
+一句话：`context` 只在“当前这个 Widget 还活着”时可靠；屏幕尺寸/主题等环境信息尽量在一次 `build` 里统一读出来用。
 
-## 5. 常用工具与命令（项目开发）
+#### 4.7.1 为什么 `await` 之后不要直接用 `context`
 
-命令速查已整理在 `docs/FLUTTER_ENV_SETUP.md` 的「Flutter 常用命令速查」章节，这里只列项目最常用的：
+你在按钮点击里写了 `await`（网络请求/延迟/文件读写）时，等待期间用户可能已经切走页面或页面被销毁；这时再用 `context` 去弹窗/跳转/提示就可能报错或无效。
 
-```bash
-fvm flutter pub get
-fvm flutter analyze
-fvm flutter test
-fvm flutter run -d chrome
-fvm flutter run -d macos
+做法：每次 `await` 之后，先判断一次：
+
+```dart
+await someAsyncWork();
+if (!context.mounted) return;
+// 这里开始再安全地用 context（showDialog / Navigator / SnackBar 等）
 ```
 
-## 5.1 主题与资源（本项目）
+#### 4.7.2 为什么 `MediaQuery/Theme` 要在 build 里先读成变量
 
-- 全局主题：`lib/src/app.dart`（`ThemeData` / `colorSchemeSeed`）
-- 渐变背景：`lib/src/shell/app_shell.dart`（Shell 层 `DecoratedBox` + `AppGradients`）
-- 海报图（首页）：`lib/src/features/home/presentation/home_screen.dart`
-  - 资源位置：`assets/images/poster.png`（没有该文件时会用渐变占位）
-  - 资源声明：`pubspec.yaml` 的 `flutter/assets`
+`MediaQuery`（屏幕尺寸/文字缩放等）和 `Theme` 都是“当前这次 build 的环境信息”。把它们在 `build` 开头读出来，后面统一用变量，能避免到处零散读取、也避免跨异步后读到不一致的环境。
 
-## 6. 常用组件/Widget 与使用场景
+```dart
+@override
+Widget build(BuildContext context) {
+  final size = MediaQuery.sizeOf(context);
+  final theme = Theme.of(context);
+  // 后面用 size / theme
+  return Text('w=${size.width}', style: theme.textTheme.bodyMedium);
+}
+```
 
-这部分不是百科，只记录项目里经常会遇到的选择题。
+### 4.8 路由与依赖注入（概念）
 
-### 6.1 黑板/画布相关
+- 路由使用 `go_router`，并通过 Riverpod Provider 注入到 `MaterialApp.router`
+- `@riverpod` + `part '*.g.dart'`：会生成 `xxxProvider`（生成文件不手改）
+- 你在 UI 里用 `ref.watch(xxxProvider)` 获取依赖（例如 `GoRouter`），这就是依赖注入的基本形态
 
-- `Listener`：拿到原始指针事件（鼠标/触控）更完整，适合画板输入
-- `GestureDetector`：手势语义更强（双击/长按等），但对高频点采样要谨慎
-- `CustomPaint`/`Canvas`：绘制路径、形状、背景网格；高频绘制核心
-- `InteractiveViewer`：快速实现缩放/平移（内部基于变换矩阵）
-- `RepaintBoundary`：用于局部重绘隔离，也用于导出图片（`toImage()`）
+## 5. 常用工具与命令（通用）
 
-### 6.2 布局与叠层
+更完整的命令与环境说明请看：`docs/FLUTTER_ENV_SETUP.md`。这里仅保留“你经常会用到”的通用命令。
 
-- `Stack`/`Positioned`：叠加工具栏、浮层提示（例如页数提示）
-- `Align`：右侧工具条、角落按钮对齐
+```bash
+# 依赖
+flutter pub get
+
+# 运行（先用 flutter devices 看可用设备）
+flutter run -d chrome
+flutter run -d macos
+
+# 静态检查与测试
+flutter analyze
+flutter test
+
+# 格式化（纯 Dart 工具）
+dart format .
+```
+
+如果项目用了代码生成（freezed/riverpod/json_serializable 等），会额外用到：
+
+```bash
+flutter pub run build_runner build --delete-conflicting-outputs
+flutter pub run build_runner watch --delete-conflicting-outputs
+```
+
+## 6. 常用组件选择题（通用）
+
+这部分只记录“什么时候用哪个”，避免背一堆 API。
+
+### 6.1 输入与手势
+
+- `Listener`：更底层，能拿到更完整的 PointerEvent（适合高频采样，例如画线/拖拽）
+- `GestureDetector`：更语义化（点击/双击/长按/拖拽等），但在高频点采样场景可能不如 `Listener` 直接
+
+### 6.2 绘制与性能
+
+- `CustomPaint` + `CustomPainter`：自己用 `Canvas` 画（路径/形状/网格等），适合自定义画布
+- `RepaintBoundary`：隔离重绘范围；也常用于导出图片（`toImage()`）
+- `InteractiveViewer`：快速获得缩放/平移（适合“浏览模式”，复杂画板可后续替换为自定义相机）
+
+### 6.3 叠层与定位
+
+- `Stack`/`Positioned`：叠加浮层（例如工具栏、提示条）
+- `Align`：简单的角落对齐（右下角按钮等）
 
 ## 7. 平台工程速查
 

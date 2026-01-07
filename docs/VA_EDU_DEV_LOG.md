@@ -9,12 +9,31 @@
 - 项目入口与运行：`README.md`
 - 画板从 0→1（总纲 TODO #1 的细拆）：`docs/BLACKBOARD_0_TO_1.md`
 
+---
+
 ## 项目概况
 
 - **项目名称：**va-edu
 - **业务背景：**国际教育企业学习工具探索
 - **产品方向：**桌面端 + Web 端优先探索（课堂黑板/画板能力切入）
 - **目标平台：**Web + macOS Desktop（后续再评估 iOS/Android）
+
+## 工程信息（项目相关索引）
+
+### 入口与路由
+
+- 应用入口：`lib/main.dart`
+- 应用根：`lib/src/app.dart`（`MaterialApp.router`，从 Provider 读取路由并注入）
+- 路由声明：`lib/src/routing/app_router.dart`（`go_router` 路由表）
+- 路由 Provider（生成）：`lib/src/routing/app_router.g.dart`（自动生成，不手改）
+- Shell（承载 Tab/导航 UI）：`lib/src/shell/app_shell.dart`
+
+### 主题与资源
+
+- 全局主题：`lib/src/app.dart`（`ThemeData` / `colorSchemeSeed`）
+- 渐变背景：`lib/src/shell/app_shell.dart`（Shell 层背景装饰）
+- 首页海报图：`assets/images/poster.png`（缺失时可用占位方案替代）
+  - 资源声明：`pubspec.yaml` 的 `flutter/assets`
 
 ## 总体目标（长期）
 

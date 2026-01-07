@@ -2,6 +2,8 @@
 
 这份文档旨在帮助开发者在 macOS 系统上从零开始搭建 Flutter 开发环境，涵盖桌面端 (macOS) 和 Web 端的配置。
 
+---
+
 ## 0. 开始前你需要知道
 
 - 如果你打算使用 FVM，建议全程优先用 `fvm flutter ...`（尤其是项目里），避免误用系统 Flutter。
@@ -144,8 +146,6 @@ sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
     fvm remove <version>
     ```
 
----
-
 ## 2. 平台支持配置
 
 ### 2.1 macOS 桌面端开发配置
@@ -197,8 +197,6 @@ Flutter Web 依赖 Chrome 浏览器进行调试。
 flutter config --enable-macos-desktop
 ```
 
----
-
 ## 3. IDE 开发工具配置 (VS Code)
 
 作为前端工程师，强烈推荐使用 VS Code。
@@ -219,8 +217,6 @@ flutter config --enable-macos-desktop
 2. 搜索 `dart.flutterSdkPaths`。
 3. 添加一项：`/Users/你的用户名/fvm/versions` (或者直接指向 `~/fvm/default`)。
     - *小技巧：在项目根目录下运行 `fvm use stable` 会生成 `.fvm` 配置文件夹，VS Code 通常能自动识别。*
-
----
 
 ## 4. 环境自检
 
@@ -245,8 +241,6 @@ flutter doctor
 
 ![环境自检成功示例](./md-images/环境自检.png)
 
----
-
 ## 5. 项目级运行与调试（va-edu）
 
 在本项目里建议统一使用 FVM：
@@ -270,8 +264,6 @@ fvm flutter run -d chrome --web-renderer canvaskit
 ```
 
 > 说明：`--web-renderer` 是 `flutter run` 的参数；`flutter build web` 不提供该参数。
-
----
 
 ### 5.1 VS Code 调试与 Flutter DevTools
 
@@ -300,8 +292,6 @@ fvm flutter run -d chrome
 ```
 
 启动后终端会输出 DevTools 链接（包含 `?uri=` 参数），直接打开即可使用 Inspector/Performance/Network 等功能。
-
----
 
 ## 6. Flutter 常用命令速查
 
@@ -352,8 +342,6 @@ fvm flutter run -d chrome
 
 - 清理构建缓存：`fvm flutter clean`（之后通常需要再跑 `fvm flutter pub get`）
 - 查看 Flutter/Dart 版本：`fvm flutter --version`
-
----
 
 ## 7. 常见问题 (Troubleshooting)
 

@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:va_edu/src/features/home/presentation/home_screen.dart';
 import 'package:va_edu/src/features/settings/presentation/settings_screen.dart';
 import 'package:va_edu/src/features/blackboard/presentation/blackboard_screen.dart';
+import 'package:va_edu/src/features/counter/presentation/counter_screen.dart';
 import 'package:va_edu/src/shell/app_shell.dart';
 
 part 'app_router.g.dart';
@@ -34,6 +35,14 @@ GoRouter appRouter(Ref ref) {
                 builder: (context, state) => const BlackboardScreen(),
               ),
             ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/counter',
+                builder: (context, state) => const CounterScreen()
+              )
+            ]
           ),
           StatefulShellBranch(
             routes: [
