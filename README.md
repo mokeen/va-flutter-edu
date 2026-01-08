@@ -57,9 +57,11 @@ fvm flutter build windows --release
 
 ## 当前状态
 
-- 黑板页面当前为画板占位页，后续将逐步实现画板能力。
-- 按 `docs/BLACKBOARD_0_TO_1.md` 从 0→1 实现“画板 MVP”（对应总纲 TODO #1）。
+- **[已完成] 画板 MVP**：已完成 `docs/BLACKBOARD_0_TO_1.md` 所有步骤。
+  - **功能**：基础画布、手写输入、多笔画保留、圆角线条样式。
+  - **代码**：核心逻辑见 `lib/src/features/blackboard`。
 
-## 已知缺口（下一步）
+## 下一步计划
 
-- 其余能力按总纲 TODO 逐步补齐：`docs/VA_EDU_DEV_LOG.md`
+- **TODO #2**：撤销 / 重做 / 清空（完善编辑能力）
+- 更多计划请参考总纲：`docs/VA_EDU_DEV_LOG.md`
