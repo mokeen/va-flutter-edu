@@ -129,6 +129,30 @@ dart run build_runner watch --delete-conflicting-outputs
 - `!`：我确定它不为空（用错会崩）
 - `??`：为空就用默认值
 
+#### 4.1.1 常见坑：const 的使用误区（Invalid constant value）
+
+初学者常遇到的报错：
+> "Invalid constant value" / "The constructor being called isn't a const constructor"
+
+**核心原则**：
+- `const` 或者是“所有子节点在**编译时**就是死的”。
+- 一旦组件树里包含任何**变量**（如回调函数 `onPressed: myFunc`、外部传来的参数 `title`），它的**父节点**就绝对不能是 `const`。
+
+**错误示例**：
+```dart
+onPressed: () { ... }, // 这是一个回调（运行时变量）
+child: const Padding( // ❌ 报错！因为 Padding 包含了上面的动态回调
+  ...
+)
+```
+
+**修正**：移除最外层的 `const`，只在里面真正不变的地方（如图标、文本样式、尺寸）加 `const`。
+```dart
+child: Padding( // ✅ 去掉 const
+  child: const Icon(...) // ✅ 这里内部可以用 const
+)
+```
+
 #### 函数/回调（高频）
 
 - `() {}`：函数体
