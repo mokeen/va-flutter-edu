@@ -44,19 +44,14 @@ class _BlackboardScreenState extends State<BlackboardScreen> {
                   onPointerMove: (event) => controller.moveStroke(event.localPosition),
                   onPointerUp: (event) => controller.endStroke(),
 
-                  // 使用 ListenableBuilder 监听 Controller，当 notifyListeners 被调用时重绘
-                  child: ListenableBuilder(
-                    listenable: controller,
-                    builder: (context, child) {
-                      return CustomPaint(
-                        painter: BlackboardPainter(
-                          // 从 Controller 获取最新的只读数据
-                          currentStroke: controller.currentStroke,
-                          historyStrokes: controller.historyStrokes,
-                        ),
-                      );
-                    },
-                  ),
+                  child: CustomPaint(
+                    painter: BlackboardPainter(
+                      // 从 Controller 获取最新的只读数据
+                      currentStroke: controller.currentStroke,
+                      historyStrokes: controller.historyStrokes,
+                      lastEraserPosition: controller.lastEraserPosition,
+                    ),
+                  )
                 ),
               ),
               Positioned(
@@ -71,6 +66,8 @@ class _BlackboardScreenState extends State<BlackboardScreen> {
                     canUndo: controller.historyStrokes.isNotEmpty,
                     canRedo: controller.redoStrokes.isNotEmpty,
                     canClear: controller.historyStrokes.isNotEmpty,
+                    mode: controller.mode,
+                    onModeChanged: (mode) => controller.setMode(mode),
                   ),
                 ),
               ),

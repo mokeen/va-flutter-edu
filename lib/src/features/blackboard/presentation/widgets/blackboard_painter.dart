@@ -9,11 +9,13 @@ class BlackboardPainter extends CustomPainter {
   const BlackboardPainter({
     required this.currentStroke,
     required this.historyStrokes,
+    required this.lastEraserPosition
   });
 
   // 数据源：当前笔迹和历史笔迹
   final List<Offset> currentStroke;
   final List<List<Offset>> historyStrokes;
+  final Offset? lastEraserPosition;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -46,6 +48,27 @@ class BlackboardPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round;
 
       canvas.drawPoints(PointMode.polygon, stroke, historyStrokePaint);
+    }
+
+    if (lastEraserPosition != null) {
+      final eraserPaint = Paint()
+        ..color = Colors.white24
+        ..style = PaintingStyle.fill;
+
+      final rect = Rect.fromCenter(
+        center: lastEraserPosition!,
+        width: 26,
+        height: 40,
+      );
+      
+      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+      canvas.drawRRect(rrect, eraserPaint);
+
+      final borderPaint = Paint()
+        ..color = Colors.white54
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      canvas.drawRRect(rrect, borderPaint);
     }
   }
 

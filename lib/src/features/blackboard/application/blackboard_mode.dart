@@ -1,0 +1,4 @@
+enum BlackboardMode {
+  pen,
+  eraser,
+}
