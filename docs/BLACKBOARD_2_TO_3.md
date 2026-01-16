@@ -52,10 +52,13 @@
     - **画笔模式**：绘制旋转 45 度的拟物化黄色铅笔。
 - **验收**：鼠标悬停或移动时，光标跟随且样式正确；画笔笔尖对准落点。
 
-### [ ] Step 5：进阶规划 (Command Pattern)
+### [x] Step 5：进阶规划 (Command Pattern)
 
-- [ ] 为了支持擦除的撤销，未来将重构为命令模式（见 `Undo/Redo` 专项规划）。
-- **状态**：目前暂未实现（作为 TODO #3 的后续优化项）。
+- [x] 为了支持擦除的撤销，重构为命令模式（基于 `BlackboardCommand`）。
+    - 引入 `DrawCommand` 和 `EraseCommand`。
+    - `EraseCommand` 内部维护 `List<EraseAction>`，支持对“被切割线条”的完美复原。
+    - Controller 改为维护 `undoStack` 和 `redoStack`。
+- **状态**：已在 TODO #3 后半程完成，实现了“擦除可撤销”和“清空可撤销”。
 
 ---
 
@@ -171,6 +174,45 @@ IconButton(
   icon: const Icon(Icons.edit, color: Colors.white),
   onPressed: () => onModeChanged(BlackboardMode.pen),
 )
+```
+
+### 5. 撤销重做架构 (Command Pattern)
+
+为了支持复杂的“切割式擦除”撤销，我们重构了 Undo 系统。
+
+**核心思想**：
+*   **DrawCommand**: 简单添加/移除最后一笔。
+*   **EraseCommand**: 每一个擦除手势包含一组 `EraseAction`。
+*   **ClearCommand**: 保存当前画布快照 (Backup)。
+
+#### 关键逻辑：擦除的撤销 (EraseCommand.undo)
+
+最复杂的部分在于如何撤销“把一根线切成两半”这个操作。
+我们必须**倒序**回滚，把生成的碎片线条删掉，把原来的老线条插回去。
+
+```dart
+// lib/src/features/blackboard/application/blackboard_command.dart
+
+@override
+void undo(List<List<Offset>> strokedHistory) {
+  // Undo 逻辑：必须 **倒序** 回滚 (FILO)
+  for (int i = actions.length - 1; i >= 0; i--) {
+    final action = actions[i];
+    
+    // 1. 如果当时生成了新线条，现在先把它们删掉
+    if (action.newStrokes.isNotEmpty) {
+       // 从 index 处移除 newStrokes.length 个元素
+       for (int k = 0; k < action.newStrokes.length; k++) {
+         if (action.index < strokedHistory.length) {
+           strokedHistory.removeAt(action.index);
+         }
+       }
+    }
+
+    // 2. 把旧线条插回原位，完美复原
+    strokedHistory.insert(action.index, action.oldStroke);
+  }
+}
 ```
 
 ## 学习总结

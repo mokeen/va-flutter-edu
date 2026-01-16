@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:va_edu/src/features/blackboard/application/blackboard_mode.dart';
+import 'package:va_edu/src/features/blackboard/application/blackboard_command.dart';
 
 /// 管理画板状态（笔迹历史）与操作逻辑
 ///
@@ -14,10 +15,16 @@ class BlackboardController extends ChangeNotifier {
   final List<Offset> _currentStroke = [];
   
   // 历史笔迹堆栈（用于显示）
+  // 历史笔迹堆栈（用于显示，也是 Command 执行的目标）
   final List<List<Offset>> _historyStrokes = [];
   
-  // 撤销笔迹堆栈（用于重做）
-  final List<List<Offset>> _redoStrokes = [];
+  // 撤销/重做命令栈 (Command Pattern)
+  final List<BlackboardCommand> _undoStack = [];
+  final List<BlackboardCommand> _redoStack = [];
+
+  // [Eraser] 当前一次触摸手势中累积的擦除动作
+  // 因为 moveStroke 会触发多次，我们需要把这一连串的动作打包成一个 EraseCommand
+  final List<EraseAction> _pendingEraseActions = [];
 
   BlackboardMode _mode = BlackboardMode.pen;
 
@@ -26,7 +33,9 @@ class BlackboardController extends ChangeNotifier {
   // Getters (对外只读，防止外部直接修改内部 List)
   List<Offset> get currentStroke => List.unmodifiable(_currentStroke);
   List<List<Offset>> get historyStrokes => List.unmodifiable(_historyStrokes);
-  List<List<Offset>> get redoStrokes => List.unmodifiable(_redoStrokes);
+  // Stack 长度用于简单的 UI 状态判断 (canUndo/canRedo)
+  int get undoStackLength => _undoStack.length;
+  int get redoStackLength => _redoStack.length;
   BlackboardMode get mode => _mode;
   Offset? get currentPointerPosition => _currentPointerPosition;
 
@@ -34,10 +43,13 @@ class BlackboardController extends ChangeNotifier {
   /// 清空重做栈，因为产生了新历史，未来的时间线已失效。
   void startStroke(Offset point) {
     if (_mode == BlackboardMode.pen) {
-      _redoStrokes.clear(); // [Key Logic] 新操作必需清空 Redo 栈
+      _redoStack.clear(); // 产生新分支，清空重做栈
       _currentStroke.clear();
       _currentStroke.add(point);
       notifyListeners();
+    } else if (_mode == BlackboardMode.eraser) {
+      _redoStack.clear();
+      _pendingEraseActions.clear(); // 准备记录新的一组擦除动作
     }
     _currentPointerPosition = point;
     notifyListeners();
@@ -57,16 +69,41 @@ class BlackboardController extends ChangeNotifier {
         final stroke = _historyStrokes[i];
         for (int j = 0; j < stroke.length - 1; j++) {
           if (_isSegmentIntersectsRect(stroke[j], stroke[j + 1], eraserRect) || _distToSegment(point, stroke[j], stroke[j + 1]) < 15) {
+            
+            // --- 命中！准备切割 ---
+            
+            // 1. 记录原始线条 (Deep Copy)
+            final oldStroke = List<Offset>.from(stroke);
+            final List<List<Offset>> newStrokes = [];
+
+            // 2. 从画布移除
             _historyStrokes.removeAt(i);
+            
+            // 3. 计算切断后的片段
             final firstPart = stroke.sublist(0, j + 1);
             final secondPart = stroke.sublist(j + 1);
+            
+            // 4. 将新片段插回画布 (注意顺序)
+            // 结果顺序必须是 [firstPart, secondPart]
+            // insert(i, second) -> [..., second, ...]
+            // insert(i, first)  -> [..., first, second, ...]
             if (secondPart.isNotEmpty) {
               _historyStrokes.insert(i, secondPart);
+              newStrokes.add(secondPart);
             }
             if (firstPart.isNotEmpty) {
               _historyStrokes.insert(i, firstPart);
+              newStrokes.insert(0, firstPart); // 加到前面
             }
-            break;
+
+            // 5. 记录这个原子动作
+            _pendingEraseActions.add(EraseAction(
+              index: i, 
+              oldStroke: oldStroke, 
+              newStrokes: newStrokes
+            ));
+
+            break; 
           }
         }
       }
@@ -80,10 +117,31 @@ class BlackboardController extends ChangeNotifier {
   void endStroke() {
     if (_mode == BlackboardMode.pen) {
       if (_currentStroke.isNotEmpty) {
-        _historyStrokes.add(List.from(_currentStroke)); // [Key Logic] 深拷贝保存
+        // [Command Pattern] 封装绘制命令
+        final strokeData = List<Offset>.from(_currentStroke);
+        final command = DrawCommand(strokeData);
+        
+        // 执行并入栈 (注: 现在的 UI 逻辑其实是先画了再存 command，
+        // DrawCommand.execute 其实是 history.add。
+        // 为了逻辑闭环，我们这里还是应该走 execute，或者仅仅是把 data 加进去
+        // 现在的逻辑是：moveStroke 已经把 pixel 画在屏幕上了吗？
+        // 不，moveStroke 只是加到了 _currentStroke（UI 层的暂存区）。
+        // _historyStrokes 还没加呢。
+        // 所以这里调用 execute 是非常正确的。)
+        
+        command.execute(_historyStrokes);
+        _undoStack.add(command);
+
         _currentStroke.clear();
         notifyListeners();
       }
+    } else if (_mode == BlackboardMode.eraser) {
+        // [Command Pattern] 如果产生了擦除动作，打包入栈
+        if (_pendingEraseActions.isNotEmpty) {
+          final command = EraseCommand(List.from(_pendingEraseActions));
+          _undoStack.add(command);
+          _pendingEraseActions.clear();
+        }
     }
     _currentPointerPosition = null;
     notifyListeners();
@@ -97,29 +155,37 @@ class BlackboardController extends ChangeNotifier {
   /// 撤销 (Undo)
   /// 将历史栈顶的笔迹移入重做栈。
   void undo() {
-    if (_historyStrokes.isNotEmpty) {
-      _redoStrokes.add(List.from(_historyStrokes.last));
-      _historyStrokes.removeLast();
+    if (_undoStack.isNotEmpty) {
+      final command = _undoStack.removeLast();
+      command.undo(_historyStrokes);
+      _redoStack.add(command);
       notifyListeners();
     }
   }
 
   /// 重做 (Redo)
-  /// 将重做栈顶的笔迹移回历史栈。
   void redo() {
-    if (_redoStrokes.isNotEmpty) {
-      _historyStrokes.add(List.from(_redoStrokes.last));
-      _redoStrokes.removeLast();
+    if (_redoStack.isNotEmpty) {
+      final command = _redoStack.removeLast();
+      command.execute(_historyStrokes);
+      _undoStack.add(command);
       notifyListeners();
     }
   }
 
   /// 清空 (Clear)
-  /// 彻底清空所有状态。
+  /// 使用 Command Pattern，使其可撤销。
   void clear() {
-    _historyStrokes.clear();
-    _redoStrokes.clear();
-    notifyListeners();
+    if (_historyStrokes.isNotEmpty) {
+      final command = ClearCommand(_historyStrokes);
+      command.execute(_historyStrokes);
+      
+      _undoStack.add(command);
+      _redoStack.clear(); // 清空产生新历史，重做栈失效
+      _pendingEraseActions.clear();
+      
+      notifyListeners();
+    }
   }
 
   void setMode(BlackboardMode newMode) {
