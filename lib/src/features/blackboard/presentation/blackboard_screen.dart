@@ -43,13 +43,15 @@ class _BlackboardScreenState extends State<BlackboardScreen> {
                   onPointerDown: (event) => controller.startStroke(event.localPosition),
                   onPointerMove: (event) => controller.moveStroke(event.localPosition),
                   onPointerUp: (event) => controller.endStroke(),
+                  onPointerHover: (event) => controller.hoverStroke(event.localPosition),
 
                   child: CustomPaint(
                     painter: BlackboardPainter(
                       // 从 Controller 获取最新的只读数据
                       currentStroke: controller.currentStroke,
                       historyStrokes: controller.historyStrokes,
-                      lastEraserPosition: controller.lastEraserPosition,
+                      currentPointerPosition: controller.currentPointerPosition,
+                      mode: controller.mode,
                     ),
                   )
                 ),

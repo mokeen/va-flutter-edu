@@ -21,14 +21,14 @@ class BlackboardController extends ChangeNotifier {
 
   BlackboardMode _mode = BlackboardMode.pen;
 
-  Offset? _lastEraserPosition;
+  Offset? _currentPointerPosition;
 
   // Getters (对外只读，防止外部直接修改内部 List)
   List<Offset> get currentStroke => List.unmodifiable(_currentStroke);
   List<List<Offset>> get historyStrokes => List.unmodifiable(_historyStrokes);
   List<List<Offset>> get redoStrokes => List.unmodifiable(_redoStrokes);
   BlackboardMode get mode => _mode;
-  Offset? get lastEraserPosition => _lastEraserPosition;
+  Offset? get currentPointerPosition => _currentPointerPosition;
 
   /// 开始绘制 (PointerDown)
   /// 清空重做栈，因为产生了新历史，未来的时间线已失效。
@@ -38,17 +38,15 @@ class BlackboardController extends ChangeNotifier {
       _currentStroke.clear();
       _currentStroke.add(point);
       notifyListeners();
-    } else if (_mode == BlackboardMode.eraser) {
-      _lastEraserPosition = point;
-      notifyListeners();
     }
+    _currentPointerPosition = point;
+    notifyListeners();
   }
 
   /// 移动绘制 (PointerMove)
   void moveStroke(Offset point) {
     if (_mode == BlackboardMode.pen) {
       _currentStroke.add(point);
-      notifyListeners();
     } else if (_mode == BlackboardMode.eraser) {
       final eraserRect = Rect.fromCenter(
         center: point,
@@ -72,9 +70,9 @@ class BlackboardController extends ChangeNotifier {
           }
         }
       }
-      _lastEraserPosition = point;
-      notifyListeners();
     }
+    _currentPointerPosition = point;
+    notifyListeners();
   }
 
   /// 结束绘制 (PointerUp)
@@ -86,10 +84,14 @@ class BlackboardController extends ChangeNotifier {
         _currentStroke.clear();
         notifyListeners();
       }
-    } else if (_mode == BlackboardMode.eraser) {
-      _lastEraserPosition = null;
-      notifyListeners();
     }
+    _currentPointerPosition = null;
+    notifyListeners();
+  }
+
+  void hoverStroke(Offset point) {
+    _currentPointerPosition = point;
+    notifyListeners();
   }
 
   /// 撤销 (Undo)
