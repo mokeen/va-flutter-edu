@@ -136,3 +136,38 @@ class ClearCommand implements BlackboardCommand {
     strokedHistory.addAll(_backupStrokes);
   }
 }
+
+/// ---------------------------------------------------------------------------
+
+/// 移动命令
+/// 对应：用户选中并平移了一组笔迹
+class MoveCommand implements BlackboardCommand {
+  final Set<int> indices;
+  final Offset delta;
+
+  MoveCommand(this.indices, this.delta);
+
+  @override
+  void execute(List<List<Offset>> strokedHistory) {
+    for (final index in indices) {
+      if (index >= 0 && index < strokedHistory.length) {
+        final stroke = strokedHistory[index];
+        for (int i = 0; i < stroke.length; i++) {
+          stroke[i] += delta;
+        }
+      }
+    }
+  }
+
+  @override
+  void undo(List<List<Offset>> strokedHistory) {
+    for (final index in indices) {
+      if (index >= 0 && index < strokedHistory.length) {
+        final stroke = strokedHistory[index];
+        for (int i = 0; i < stroke.length; i++) {
+          stroke[i] -= delta;
+        }
+      }
+    }
+  }
+}

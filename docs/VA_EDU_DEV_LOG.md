@@ -58,11 +58,16 @@
 - [x] TODO #3：橡皮擦
   - 目标：对象擦除（点击/划过线条即可删除）
   - 细拆：`docs/BLACKBOARD_2_TO_3.md`
-- [ ] TODO #4：浏览/滚动（可选：长画布、多页、页数提示）
-- [ ] TODO #5：导出 PNG（Web 下载 / 桌面保存）
-- [ ] TODO #6：本地保存/加载（JSON）
-- [ ] TODO #7：选择/移动/删除（命中、框选、变换）
-- [ ] TODO #8：多页黑板/课件叠加（可选）
+- [x] TODO #4：视图与页面管理
+  - 目标：无限画布（垂直滚动）、多页切换、缩放（可选）
+  - 细拆：`docs/BLACKBOARD_3_TO_4.md`
+- [x] TODO #5：编辑能力 (Selection & Transformation)
+  - 目标：选择、移动、删除、变换（命中与框选）
+  - 细拆：`docs/BLACKBOARD_4_TO_5.md`
+- [ ] TODO #6：数据持久化 (Save & Load)
+  - 目标：本地保存/加载（JSON）
+- [ ] TODO #7：导出 (Export)
+  - 目标：导出 PNG（Web 下载 / 桌面保存）
 
 ## 关键决策记录（Decision Log）
 

@@ -16,6 +16,7 @@ class BlackboardToolbar extends StatelessWidget {
     required this.canClear,
     required this.mode,
     required this.onModeChanged,
+    this.isSelectionActive = false,
   });
 
   // 回调函数，由父组件传入具体逻辑
@@ -29,6 +30,7 @@ class BlackboardToolbar extends StatelessWidget {
   final bool canRedo;
   final bool canClear;
   final BlackboardMode mode;
+  final bool isSelectionActive;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +46,30 @@ class BlackboardToolbar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // --- 1. 操作区 (Manipulation) ---
+            IconButton(
+              style: IconButton.styleFrom(
+                minimumSize: const Size(22, 22),
+                backgroundColor: mode == BlackboardMode.selection ? Colors.white10 : Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              iconSize: 20,
+              icon: Icon(
+                Icons.pan_tool_alt_outlined,
+                color: canClear ? Colors.white : Colors.white24,
+              ),
+              tooltip: '选择 (V)',
+              onPressed: canClear ? () => onModeChanged(BlackboardMode.selection) : null,
+            ),
+            const SizedBox(height: 8),
+
+            // 逻辑分割
+            Container(width: 20, height: 1, color: Colors.white12),
+            const SizedBox(height: 8),
+
+            // --- 2. 绘制区 (Creation) ---
             IconButton(
               style: IconButton.styleFrom(
                 minimumSize: const Size(22, 22),
@@ -57,45 +83,9 @@ class BlackboardToolbar extends StatelessWidget {
                 Icons.edit,
                 color: Colors.white,
               ),
-              tooltip: '画笔',
+              tooltip: '画笔 (P)',
               onPressed: () => onModeChanged(BlackboardMode.pen),
             ),
-            const SizedBox(height: 8,),
-            // 自定义分割线 (Container 替换 Divider 以解决可见性问题)
-            Container(
-              width: 24,
-              height: 1,
-              color: Colors.white54,
-            ),
-            const SizedBox(height: 8),
-            IconButton(
-              iconSize: 20,
-              // 根据状态改变图标颜色 (Disabled 状态为半透)
-              icon: Icon(
-                Icons.undo,
-                color: canUndo ? Colors.white : Colors.white24,
-              ),
-              tooltip: '撤销',
-              // onPressed 为 null 时按钮自动禁用
-              onPressed: canUndo ? onUndo : null,
-            ),
-            IconButton(
-              iconSize: 20,
-              icon: Icon(
-                Icons.redo,
-                color: canRedo ? Colors.white : Colors.white24,
-              ),
-              tooltip: '重做',
-              onPressed: canRedo ? onRedo : null,
-            ),
-            const SizedBox(height: 8,),
-            // 自定义分割线 (Container 替换 Divider 以解决可见性问题)
-            Container(
-              width: 24,
-              height: 1,
-              color: Colors.white54,
-            ),
-            const SizedBox(height: 8),
             IconButton(
               style: IconButton.styleFrom(
                 backgroundColor: mode == BlackboardMode.eraser ? Colors.white10 : Colors.transparent,
@@ -109,16 +99,42 @@ class BlackboardToolbar extends StatelessWidget {
                 Icons.cleaning_services_outlined,
                 color: canClear ? Colors.white : Colors.white24,
               ),
-              tooltip: '橡皮',
-              onPressed: () => onModeChanged(BlackboardMode.eraser),
+              tooltip: '橡皮 (E)',
+              onPressed: canClear ? () => onModeChanged(BlackboardMode.eraser) : null,
             ),
+            const SizedBox(height: 8),
+
+            // 逻辑分割
+            Container(width: 20, height: 1, color: Colors.white12),
+            const SizedBox(height: 8),
+
+            // --- 3. 系统区 (System) ---
+            IconButton(
+              iconSize: 20,
+              icon: Icon(
+                Icons.undo,
+                color: canUndo ? Colors.white : Colors.white24,
+              ),
+              tooltip: '撤销',
+              onPressed: canUndo ? onUndo : null,
+            ),
+            IconButton(
+              iconSize: 20,
+              icon: Icon(
+                Icons.redo,
+                color: canRedo ? Colors.white : Colors.white24,
+              ),
+              tooltip: '重做',
+              onPressed: canRedo ? onRedo : null,
+            ),
+            const SizedBox(height: 4),
             IconButton(
               iconSize: 22,
               icon: Icon(
-                Icons.delete_outline,
-                color: canClear ? Colors.red : Colors.white24,
+                isSelectionActive ? Icons.delete_sweep : Icons.delete_outline,
+                color: canClear ? (isSelectionActive ? Colors.orange : Colors.red) : Colors.white24,
               ),
-              tooltip: '清空',
+              tooltip: isSelectionActive ? '删除选中' : '全屏清空',
               onPressed: canClear ? onClear : null,
             ),
           ],

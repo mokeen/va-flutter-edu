@@ -1,16 +1,13 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'package:va_edu/src/features/blackboard/application/blackboard_controller.dart';
 
 import 'package:va_edu/src/features/blackboard/presentation/widgets/blackboard_painter.dart';
 import 'package:va_edu/src/features/blackboard/presentation/widgets/blackboard_toolbar.dart';
+import 'package:va_edu/src/features/blackboard/presentation/widgets/blackboard_page_control.dart';
 
-/// 黑板主页面
-///
-/// 职责：
-/// 1. 组装 UI：Stack (底层 Canvas + 上层 Toolbar)
-/// 2. 事件分发：Listener -> Controller
-/// 3. 状态监听：ListenableBuilder 监听 Controller 变化并刷新 UI
+/// 黑板主页面 (Plan C: 统一缩放画布)
 class BlackboardScreen extends StatefulWidget {
   const BlackboardScreen({super.key});
 
@@ -19,12 +16,11 @@ class BlackboardScreen extends StatefulWidget {
 }
 
 class _BlackboardScreenState extends State<BlackboardScreen> {
-  // [Refactor] 逻辑上移至 Controller，本地不再持有状态
   final controller = BlackboardController();
 
   @override
   void dispose() {
-    controller.dispose(); // 记得销毁
+    controller.dispose();
     super.dispose();
   }
 
@@ -38,22 +34,42 @@ class _BlackboardScreenState extends State<BlackboardScreen> {
           return Stack(
             children: [
               Positioned.fill(
-                child: Listener(
-                  // [Refactor] 所有的手势事件直接委托给 Controller 处理
-                  onPointerDown: (event) => controller.startStroke(event.localPosition),
-                  onPointerMove: (event) => controller.moveStroke(event.localPosition),
-                  onPointerUp: (event) => controller.endStroke(),
-                  onPointerHover: (event) => controller.hoverStroke(event.localPosition),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // [IMPORTANT] 实时更新 Controller 的视口大小，用于计算缩放和滚动边界
+                    // 这里避开在 build 期间调用 setState，updateViewport 内部有同步处理
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      controller.updateViewport(constraints.biggest);
+                    });
 
-                  child: CustomPaint(
-                    painter: BlackboardPainter(
-                      // 从 Controller 获取最新的只读数据
-                      currentStroke: controller.currentStroke,
-                      historyStrokes: controller.historyStrokes,
-                      currentPointerPosition: controller.currentPointerPosition,
-                      mode: controller.mode,
-                    ),
-                  )
+                    return Listener(
+                      onPointerDown: (event) => controller.startStroke(event.localPosition),
+                      onPointerMove: (event) => controller.moveStroke(event.localPosition),
+                      onPointerUp: (event) => controller.endStroke(),
+                      onPointerHover: (event) => controller.hoverStroke(event.localPosition),
+                      onPointerSignal: (event) {
+                        if (event is PointerScrollEvent) {
+                          controller.handleScroll(event.scrollDelta.dy);
+                        }
+                      },
+
+                      child: CustomPaint(
+                        painter: BlackboardPainter(
+                          currentStroke: controller.currentStroke,
+                          historyStrokes: controller.historyStrokes,
+                          currentPointerPosition: controller.currentPointerPosition,
+                          mode: controller.mode,
+                          scrollOffset: controller.scrollOffset,
+                          scaleFactor: controller.scaleFactor,
+                          pageCount: controller.totalPageCount,
+                          logicalPageHeight: controller.logicalPageHeight,
+                          selectedIndexes: controller.selectedIndexes,
+                          marqueeRect: controller.marqueeRect,
+                          selectionDelta: controller.selectionCurrentDelta,
+                        ),
+                      )
+                    );
+                  }
                 ),
               ),
               Positioned(
@@ -64,12 +80,29 @@ class _BlackboardScreenState extends State<BlackboardScreen> {
                   child: BlackboardToolbar(
                     onUndo: () => controller.undo(),
                     onRedo: () => controller.redo(),
-                    onClear: () => controller.clear(),
+                    onClear: () => controller.selectedIndexes.isNotEmpty 
+                        ? controller.deleteSelected() 
+                        : controller.clear(),
                     canUndo: controller.undoStackLength > 0,
                     canRedo: controller.redoStackLength > 0,
                     canClear: controller.historyStrokes.isNotEmpty,
                     mode: controller.mode,
                     onModeChanged: (mode) => controller.setMode(mode),
+                    isSelectionActive: controller.selectedIndexes.isNotEmpty,
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 24,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: BlackboardPageControl(
+                    currentPageIndex: controller.currentPageIndex,
+                    pageCount: controller.totalPageCount,
+                    onPrevPage: () => controller.prevPage(),
+                    onNextPage: () => controller.nextPage(),
+                    onHome: () => controller.jumpToHome(),
                   ),
                 ),
               ),
