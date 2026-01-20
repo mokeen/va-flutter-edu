@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:va_edu/src/features/blackboard/domain/blackboard_model.dart';
 
 /// 抽象命令基类 (Command Pattern)
 ///
@@ -8,10 +9,10 @@ abstract class BlackboardCommand {
   /// 执行命令 (Redo)
   ///
   /// [strokedHistory] 是当前画布的数据源 List
-  void execute(List<List<Offset>> strokedHistory);
+  void execute(List<Stroke> strokedHistory);
 
   /// 撤销命令 (Undo)
-  void undo(List<List<Offset>> strokedHistory);
+  void undo(List<Stroke> strokedHistory);
 }
 
 /// ---------------------------------------------------------------------------
@@ -19,20 +20,19 @@ abstract class BlackboardCommand {
 /// 绘制命令
 /// 对应：用户画了一笔
 class DrawCommand implements BlackboardCommand {
-  final List<Offset> stroke;
+  final Stroke stroke;
 
   DrawCommand(this.stroke);
 
   @override
-  void execute(List<List<Offset>> strokedHistory) {
+  void execute(List<Stroke> strokedHistory) {
     // Redo: 重新加入这一笔
     strokedHistory.add(stroke);
   }
 
   @override
-  void undo(List<List<Offset>> strokedHistory) {
+  void undo(List<Stroke> strokedHistory) {
     // Undo: 移除最后一笔
-    // 注意：假设这是栈顶操作，直接 removeLast 效率最高
     if (strokedHistory.isNotEmpty) {
       strokedHistory.removeLast();
     }
@@ -42,16 +42,13 @@ class DrawCommand implements BlackboardCommand {
 /// ---------------------------------------------------------------------------
 
 /// 擦除行为原子 (Atom)
-/// 
-/// 因为一次擦除手势可能会经过多根线条，或者把一根线切成多段。
-/// 我们把每一次微小的“切割/删除”动作定义为一个 Action。
 class EraseAction {
   // 原线条在 history 里的索引
   final int index;
   // 被删除/切断的旧线条
-  final List<Offset> oldStroke;
+  final Stroke oldStroke;
   // 切断后生成的新线条（List 为空表示完全删除，有数据表示变成了两根或多根）
-  final List<List<Offset>> newStrokes;
+  final List<Stroke> newStrokes;
 
   EraseAction({
     required this.index,
@@ -61,20 +58,16 @@ class EraseAction {
 }
 
 /// 擦除命令
-/// 对应：用户的一次擦除手势 (PointerDown -> Move -> Up)
-/// 内部包含了一组有序的原子操作 [actions]。
 class EraseCommand implements BlackboardCommand {
   final List<EraseAction> actions;
 
   EraseCommand(this.actions);
 
   @override
-  void execute(List<List<Offset>> strokedHistory) {
+  void execute(List<Stroke> strokedHistory) {
     // Redo 逻辑：按顺序重放所有的擦除操作
     for (final action in actions) {
       // 1. 移除旧线
-      // 注意：这里的 index 必须是针对当前这一刻 list 状态的有效索引
-      // 在 Controller 生成 actions 时需要保证这一点
       if (action.index < strokedHistory.length) {
         strokedHistory.removeAt(action.index);
         
@@ -89,16 +82,13 @@ class EraseCommand implements BlackboardCommand {
   }
 
   @override
-  void undo(List<List<Offset>> strokedHistory) {
+  void undo(List<Stroke> strokedHistory) {
     // Undo 逻辑：必须 **倒序** 回滚 (FILO)
-    // 否则索引会因为 List 长度变化而对不上
     for (int i = actions.length - 1; i >= 0; i--) {
       final action = actions[i];
       
       // 1. 如果当时生成了新线条，现在先把它们删掉
       if (action.newStrokes.isNotEmpty) {
-         // 我们在 execute 时是从 index 位置开始插入数据的
-         // 所以从 index 处移除 newStrokes.length 个元素
          for (int k = 0; k < action.newStrokes.length; k++) {
            if (action.index < strokedHistory.length) {
              strokedHistory.removeAt(action.index);
@@ -115,24 +105,22 @@ class EraseCommand implements BlackboardCommand {
 /// ---------------------------------------------------------------------------
 
 /// 清空命令
-/// 对应：用户点击了“清空”按钮
-/// 这是一个“快照式”命令，它必须保存清空前的所有笔迹以便撤销。
 class ClearCommand implements BlackboardCommand {
   // 备份被清空的笔迹
-  final List<List<Offset>> _backupStrokes;
+  final List<Stroke> _backupStrokes;
 
-  ClearCommand(List<List<Offset>> currentStrokes)
+  ClearCommand(List<Stroke> currentStrokes)
       : _backupStrokes = List.from(currentStrokes); // 浅拷贝：List 结构备份
 
   @override
-  void execute(List<List<Offset>> strokedHistory) {
+  void execute(List<Stroke> strokedHistory) {
     strokedHistory.clear();
   }
 
   @override
-  void undo(List<List<Offset>> strokedHistory) {
+  void undo(List<Stroke> strokedHistory) {
     // 恢复之前的笔迹
-    strokedHistory.clear(); // 防御性清空
+    strokedHistory.clear(); 
     strokedHistory.addAll(_backupStrokes);
   }
 }
@@ -140,7 +128,6 @@ class ClearCommand implements BlackboardCommand {
 /// ---------------------------------------------------------------------------
 
 /// 移动命令
-/// 对应：用户选中并平移了一组笔迹
 class MoveCommand implements BlackboardCommand {
   final Set<int> indices;
   final Offset delta;
@@ -148,26 +135,104 @@ class MoveCommand implements BlackboardCommand {
   MoveCommand(this.indices, this.delta);
 
   @override
-  void execute(List<List<Offset>> strokedHistory) {
+  void execute(List<Stroke> strokedHistory) {
     for (final index in indices) {
       if (index >= 0 && index < strokedHistory.length) {
         final stroke = strokedHistory[index];
-        for (int i = 0; i < stroke.length; i++) {
-          stroke[i] += delta;
+        for (int i = 0; i < stroke.points.length; i++) {
+          stroke.points[i] += delta;
         }
       }
     }
   }
 
   @override
-  void undo(List<List<Offset>> strokedHistory) {
+  void undo(List<Stroke> strokedHistory) {
     for (final index in indices) {
       if (index >= 0 && index < strokedHistory.length) {
         final stroke = strokedHistory[index];
-        for (int i = 0; i < stroke.length; i++) {
-          stroke[i] -= delta;
+        for (int i = 0; i < stroke.points.length; i++) {
+          stroke.points[i] -= delta;
         }
       }
     }
+  }
+}
+
+/// ---------------------------------------------------------------------------
+
+/// 更新操作命令 (整体替换某个位置的 Stroke 对象)
+class UpdateCommand implements BlackboardCommand {
+  final int index;
+  final Stroke oldStroke;
+  final Stroke newStroke;
+
+  UpdateCommand(this.index, this.oldStroke, this.newStroke);
+
+  @override
+  void execute(List<Stroke> strokedHistory) {
+    if (index >= 0 && index < strokedHistory.length) {
+      strokedHistory[index] = newStroke;
+    }
+  }
+
+  @override
+  void undo(List<Stroke> strokedHistory) {
+    if (index >= 0 && index < strokedHistory.length) {
+      strokedHistory[index] = oldStroke;
+    }
+  }
+}
+
+/// 复制操作命令
+class DuplicateCommand implements BlackboardCommand {
+  final List<Stroke> newStrokes;
+  final int startIndex; // 插入的起始位置
+
+  DuplicateCommand(this.newStrokes, this.startIndex);
+
+  @override
+  void execute(List<Stroke> strokedHistory) {
+    // 从 startIndex 开始插入
+    for (int i = 0; i < newStrokes.length; i++) {
+      if (startIndex + i <= strokedHistory.length) {
+        strokedHistory.insert(startIndex + i, newStrokes[i]);
+      } else {
+        strokedHistory.add(newStrokes[i]);
+      }
+    }
+  }
+
+  @override
+  void undo(List<Stroke> strokedHistory) {
+    // 逆序移除
+    for (int i = newStrokes.length - 1; i >= 0; i--) {
+      final targetIndex = startIndex + i;
+      if (targetIndex < strokedHistory.length) {
+        strokedHistory.removeAt(targetIndex);
+      }
+    }
+  }
+}
+
+/// 层级重排命令
+class ReorderCommand implements BlackboardCommand {
+  final List<Stroke> oldHistory;
+  final List<Stroke> newHistory;
+
+  ReorderCommand(List<Stroke> oldH, List<Stroke> newH)
+      : oldHistory = List.from(oldH),
+        newHistory = List.from(newH);
+
+  @override
+  void execute(List<Stroke> strokedHistory) {
+    strokedHistory.clear();
+    strokedHistory.addAll(newHistory);
+  }
+
+  @override
+  void undo(List<Stroke> strokedHistory) {
+    strokedHistory.clear();
+    strokedHistory.addAll(oldHistory);
   }
 }

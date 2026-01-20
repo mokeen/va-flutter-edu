@@ -8,6 +8,7 @@ class BlackboardPageControl extends StatelessWidget {
     required this.onPrevPage,
     required this.onNextPage,
     required this.onHome,
+    required this.onJumpToPageRequest,
   });
 
   final int currentPageIndex;
@@ -15,6 +16,7 @@ class BlackboardPageControl extends StatelessWidget {
   final VoidCallback onPrevPage;
   final VoidCallback onNextPage;
   final VoidCallback onHome;
+  final VoidCallback onJumpToPageRequest;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +73,13 @@ class BlackboardPageControl extends StatelessWidget {
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             tooltip: '回到首页',
+          ),
+          IconButton(
+            icon: const Icon(Icons.input, color: Colors.white, size: 18),
+            onPressed: onJumpToPageRequest,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            tooltip: '跳转指定页',
           ),
         ],
       ),

@@ -64,10 +64,15 @@
 - [x] TODO #5：编辑能力 (Selection & Transformation)
   - 目标：选择、移动、删除、变换（命中与框选）
   - 细拆：`docs/BLACKBOARD_4_TO_5.md`
-- [ ] TODO #6：数据持久化 (Save & Load)
-  - 目标：本地保存/加载（JSON）
-- [ ] TODO #7：导出 (Export)
-  - 目标：导出 PNG（Web 下载 / 桌面保存）
+- [x] TODO #6：功能扩展与体验优化 (Extensions & Polish)
+  - 目标：画笔/橡皮参数、几何图形、荧光笔/激光笔、文字编辑、分页预览、对象组合与吸附、浮动工具栏
+  - 细拆：`docs/BLACKBOARD_5_TO_6.md`
+- [x] TODO #7：本地数据持久化 (Local Persistence)
+  - 目标：实现本地 JSON 存档，支持自动保存与多文件管理
+  - 细拆：`docs/BLACKBOARD_6_TO_7.md`
+- [x] TODO #8：高清导出 (Professional Export)
+  - 目标：支持一键导出为高清 PDF 或长图（课件分享）
+  - 细拆：`docs/BLACKBOARD_7_TO_8.md`
 
 ## 关键决策记录（Decision Log）
 

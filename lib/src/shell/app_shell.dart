@@ -108,10 +108,16 @@ class AppShell extends ConsumerWidget {
       ),
     ];
 
+    // 确定是否使用深色主题
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundGradient = isDarkMode ? AppGradients.aquaDark : AppGradients.aquaLight;
+    final navBgColor = (isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.25);
+    final dividerColor = isDarkMode ? Colors.white12 : Colors.black12;
+
     if (useRail) {
       return DecoratedBox(
         // Shell 背景渐变（整个应用背景）。
-        decoration: const BoxDecoration(gradient: AppGradients.aquaDark),
+        decoration: BoxDecoration(gradient: backgroundGradient),
         child: Scaffold(
           // 透明让渐变透出来（否则 Scaffold 默认背景会盖住）。
           backgroundColor: Colors.transparent,
@@ -120,14 +126,14 @@ class AppShell extends ConsumerWidget {
               SafeArea(
                 child: NavigationRail(
                   // 半透明背景，保证图标对比度，同时让渐变可见。
-                  backgroundColor: Colors.black.withValues(alpha: 0.25),
+                  backgroundColor: navBgColor,
                   selectedIndex: navigationShell.currentIndex,
                   onDestinationSelected: _goBranch,
                   labelType: NavigationRailLabelType.all,
                   destinations: railDestinations,
                 ),
               ),
-              const VerticalDivider(width: 1, color: Colors.white12),
+              VerticalDivider(width: 1, color: dividerColor),
               // Expanded：右侧内容区撑满剩余空间。
               Expanded(child: navigationShell),
             ],
@@ -137,13 +143,13 @@ class AppShell extends ConsumerWidget {
     }
 
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppGradients.aquaDark),
+      decoration: BoxDecoration(gradient: backgroundGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         // navigationShell 是 go_router 提供的“当前 tab 内容”。
         body: navigationShell,
         bottomNavigationBar: NavigationBar(
-          backgroundColor: Colors.black.withValues(alpha: 0.25),
+          backgroundColor: navBgColor,
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _goBranch,
           destinations: destinations,
